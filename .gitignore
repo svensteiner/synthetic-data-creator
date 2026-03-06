@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# PyInstaller Build-Artefakte
+build/
+dist/
+*.spec
+
+# Test-Dateien (lokal generiert)
+test_*.xlsx
+test_*.html
+
+# Synthetische Ausgaben (kein Beispiel-Output im Repo)
+*_synthetisch.xlsx
+*_Auditbericht.html
+
+# IDE
+.vscode/
+.idea/
+*.swp

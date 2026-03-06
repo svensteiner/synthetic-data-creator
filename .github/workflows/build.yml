@@ -1,0 +1,59 @@
+name: Build EXE
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:  # Manuell ausloesbar
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Abhaengigkeiten installieren
+        run: pip install openpyxl faker pyinstaller
+
+      - name: EXE bauen
+        run: |
+          python -m PyInstaller `
+            --onefile `
+            --windowed `
+            --name "SynthetischeDatenGenerator" `
+            --add-data "synthesizer.py;." `
+            --add-data "audit.py;." `
+            --exclude-module pandas `
+            --exclude-module numpy `
+            --exclude-module matplotlib `
+            --exclude-module scipy `
+            --exclude-module PIL `
+            --exclude-module IPython `
+            --exclude-module pytest `
+            --exclude-module _pytest `
+            --exclude-module notebook `
+            --exclude-module jinja2 `
+            app.py
+
+      - name: EXE-Groesse anzeigen
+        run: Get-Item dist\SynthetischeDatenGenerator.exe | Select-Object Name, Length
+
+      - name: EXE als Release-Asset hochladen
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'release'
+        with:
+          files: dist/SynthetischeDatenGenerator.exe
+
+      - name: EXE als Artefakt speichern (bei manuellem Build)
+        uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          name: SynthetischeDatenGenerator
+          path: dist/SynthetischeDatenGenerator.exe
+          retention-days: 7
