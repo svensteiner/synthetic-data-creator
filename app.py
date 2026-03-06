@@ -133,7 +133,7 @@ class PreviewDialog(tk.Toplevel):
                      bg=row_bg, anchor="w", padx=10, width=28).pack(side=tk.LEFT, ipady=6)
 
             var = tk.StringVar(value=TYPE_LABELS.get(detected, TYPE_LABELS["text"]))
-            self._type_vars[col] = var
+            self._type_vars[(sheet, col)] = var
 
             combo = ttk.Combobox(row, textvariable=var, values=DROPDOWN_VALUES,
                                   state="readonly", width=30, font=FONT_SMALL)
@@ -170,7 +170,7 @@ class PreviewDialog(tk.Toplevel):
 
     def _on_confirm(self):
         overrides = {col: LABEL_TO_TYPE.get(var.get(), "text")
-                     for col, var in self._type_vars.items()}
+                     for (_, col), var in self._type_vars.items()}
         self.destroy()
         self._on_generate(overrides)
 

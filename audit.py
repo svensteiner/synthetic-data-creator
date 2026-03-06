@@ -4,6 +4,7 @@ Erstellt ein professionelles Dokument als Nachweis fuer datenschutzkonforme Vera
 """
 
 import datetime
+import html
 import socket
 from pathlib import Path
 
@@ -45,9 +46,9 @@ def generate_audit_report(
             dot_col  = "#27ae60" if is_anon else "#bdc3c7"
             rows_html += f"""
                 <tr>
-                    <td class="sheet-col">{sheet}</td>
-                    <td><strong>{col}</strong></td>
-                    <td>{TYPE_LABELS.get(ct, ct)}</td>
+                    <td class="sheet-col">{html.escape(sheet)}</td>
+                    <td><strong>{html.escape(col)}</strong></td>
+                    <td>{html.escape(TYPE_LABELS.get(ct, ct))}</td>
                     <td><span class="dot" style="background:{dot_col}"></span> {status}</td>
                 </tr>"""
 
@@ -138,10 +139,10 @@ def generate_audit_report(
 
   <div class="meta">
     <table>
-      <tr><td>Originaldatei</td>      <td><strong>{Path(input_path).name}</strong></td></tr>
-      <tr><td>Originalpfad</td>       <td><code style="font-size:11px">{input_path}</code></td></tr>
-      <tr><td>Ausgabedatei</td>       <td><strong>{Path(output_path).name}</strong></td></tr>
-      <tr><td>Ausgabepfad</td>        <td><code style="font-size:11px">{output_path}</code></td></tr>
+      <tr><td>Originaldatei</td>      <td><strong>{html.escape(Path(input_path).name)}</strong></td></tr>
+      <tr><td>Originalpfad</td>       <td><code style="font-size:11px">{html.escape(input_path)}</code></td></tr>
+      <tr><td>Ausgabedatei</td>       <td><strong>{html.escape(Path(output_path).name)}</strong></td></tr>
+      <tr><td>Ausgabepfad</td>        <td><code style="font-size:11px">{html.escape(output_path)}</code></td></tr>
       <tr><td>Zeitpunkt</td>          <td>{timestamp}</td></tr>
       <tr><td>Geraet / Hostname</td>  <td>{machine}</td></tr>
       <tr><td>Verarbeitete Zeilen</td><td>{total_rows:,} Datensaetze</td></tr>
@@ -182,7 +183,7 @@ def generate_audit_report(
 
   <div class="footer">
     <strong>Bestaetigungsvermerk:</strong><br>
-    Die Datei &bdquo;{Path(output_path).name}&ldquo; wurde am {timestamp} durch den
+    Die Datei &bdquo;{html.escape(Path(output_path).name)}&ldquo; wurde am {timestamp} durch den
     Synthetische Daten Generator (v1.0) erstellt. Saemtliche personenbezogenen und
     vertraulichen Daten wurden durch synthetische, realistische Alternativwerte ersetzt.
     Die Ausgabedatei enthaelt keine Originalinformationen und kann ohne datenschutzrechtliche

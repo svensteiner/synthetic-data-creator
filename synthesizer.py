@@ -5,11 +5,14 @@ Laeuft 100% lokal, keine Daten verlassen den Rechner.
 """
 
 import datetime as dt
+import logging
 import re
 import random
 import math
 from collections import defaultdict
 from typing import Any, Callable
+
+log = logging.getLogger(__name__)
 
 from faker import Faker
 from openpyxl import load_workbook
@@ -291,9 +294,7 @@ def _fake_betrag(original: Any, stats: dict) -> Any:
 
 def _fake_datum(original: Any) -> Any:
     delta = random.randint(-180, 180)
-    if isinstance(original, dt.datetime):
-        return original + dt.timedelta(days=delta)
-    if isinstance(original, dt.date):
+    if isinstance(original, (dt.date, dt.datetime)):
         return original + dt.timedelta(days=delta)
     return original
 
@@ -352,29 +353,22 @@ def generate_fake_value(col_type: str, original: Any, col_key: str, stats: dict 
 # ---------------------------------------------------------------------------
 
 def _calc_stats(values: list) -> dict:
-    nums = []
-    for v in values:
-        if _is_nan(v):
-            continue
-        try:
-            nums.append(float(v))
-        except (ValueError, TypeError):
-            pass
-
-    if not nums:
-        return {}
-
-    # Dezimalstellen ermitteln
+    nums     = []
     decimals = 0
     for v in values:
         if _is_nan(v):
             continue
         try:
-            s = f"{float(v):.10f}".rstrip("0")
+            f = float(v)
+            nums.append(f)
+            s = f"{f:.10f}".rstrip("0")
             if "." in s:
                 decimals = max(decimals, len(s.split(".")[-1]))
         except (ValueError, TypeError):
             pass
+
+    if not nums:
+        return {}
 
     return {
         "min":      min(nums),
@@ -458,8 +452,9 @@ def synthesize_excel(
                     continue
                 try:
                     cell.value = generate_fake_value(col_type, cell.value, col_name, stats)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    log.warning("Zelle (%s, %s) Zeile %d konnte nicht anonymisiert werden: %s",
+                                sheet_name, col_name, row_idx, exc)
 
     wb.save(output_path)
 

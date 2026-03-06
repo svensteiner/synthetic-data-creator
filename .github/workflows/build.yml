@@ -6,8 +6,23 @@ on:
   workflow_dispatch:  # Manuell ausloesbar
 
 jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Abhaengigkeiten installieren
+        run: pip install "openpyxl>=3.1,<4.0" "faker>=24.0,<30.0"
+      - name: Tests ausfuehren
+        run: python tests/run_all.py
+
   build:
     runs-on: windows-latest
+    needs: test
 
     steps:
       - name: Checkout
@@ -19,7 +34,7 @@ jobs:
           python-version: "3.12"
 
       - name: Abhaengigkeiten installieren
-        run: pip install openpyxl faker pyinstaller
+        run: pip install "openpyxl>=3.1,<4.0" "faker>=24.0,<30.0" pyinstaller
 
       - name: EXE bauen
         run: |
