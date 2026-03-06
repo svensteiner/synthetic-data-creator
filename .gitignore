@@ -16,6 +16,9 @@ test_*.html
 *_synthetisch.xlsx
 *_Auditbericht.html
 
+# Test-Output (wird bei jedem Testlauf neu generiert)
+tests/output/
+
 # IDE
 .vscode/
 .idea/

@@ -69,7 +69,7 @@ COLUMN_PATTERNS = {
         r"telefon", r"^tel", r"handy", r"mobil", r"phone", r"fax", r"fon",
     ],
     "iban": [
-        r"^iban$", r"kontonummer", r"konto.?nr", r"^kto",
+        r"^iban$", r"^bank.?konto",
     ],
     "bic": [
         r"^bic$", r"swift",
@@ -195,6 +195,21 @@ def detect_column_type(col_name: str, values: list) -> str:
 # Analyse (ohne Generierung) - fuer Vorschau-Dialog
 # ---------------------------------------------------------------------------
 
+def _find_header_row(ws) -> int:
+    """
+    Findet die echte Header-Zeile automatisch.
+    Ueberspringt Titelzeilen (z.B. 'BILANZ ZUM 31.12.2024' in Zeile 1).
+    Kriterium: erste Zeile mit mind. 2 String-Werten in >= 40% der Spalten.
+    """
+    n_cols = max(ws.max_column or 1, 1)
+    for row in range(1, min(10, (ws.max_row or 1) + 1)):
+        values  = [ws.cell(row, c).value for c in range(1, n_cols + 1)]
+        strings = [v for v in values if isinstance(v, str) and v.strip()]
+        if len(strings) >= 2 and len(strings) / n_cols >= 0.4:
+            return row
+    return 1
+
+
 def analyze_excel(input_path: str) -> dict:
     wb = load_workbook(input_path, read_only=True, data_only=True)
     result = {}
@@ -208,9 +223,10 @@ def analyze_excel(input_path: str) -> dict:
             result[sheet_name] = wb_info
             continue
 
+        hdr_idx   = _find_header_row(ws) - 1          # 0-based index into rows
         headers   = [str(h).strip() if h is not None else f"Spalte{i}"
-                     for i, h in enumerate(rows[0], 1)]
-        data_rows = rows[1:]
+                     for i, h in enumerate(rows[hdr_idx], 1)]
+        data_rows = rows[hdr_idx + 1:]
 
         for col_idx, col_name in enumerate(headers):
             values   = [row[col_idx] if col_idx < len(row) else None for row in data_rows]
@@ -396,19 +412,21 @@ def synthesize_excel(
             info["sheets"][sheet_name] = {}
             continue
 
-        # Header einlesen
+        # Header-Zeile automatisch finden (ueberspringt Titelzeilen)
+        hdr_row = _find_header_row(ws)
+
         headers: dict[int, str] = {}
         for col_idx in range(1, ws.max_column + 1):
-            val = ws.cell(row=1, column=col_idx).value
+            val = ws.cell(row=hdr_row, column=col_idx).value
             if val is not None:
                 headers[col_idx] = str(val).strip()
 
-        # Spaltenwerte als Listen einlesen
+        # Spaltenwerte als Listen einlesen (nur Datenzeilen)
         col_values: dict[int, list] = {}
         for col_idx in headers:
             col_values[col_idx] = [
                 ws.cell(row=r, column=col_idx).value
-                for r in range(2, ws.max_row + 1)
+                for r in range(hdr_row + 1, ws.max_row + 1)
             ]
 
         # Typen + Stats ermitteln
@@ -434,7 +452,7 @@ def synthesize_excel(
 
             stats = col_stats.get(col_idx, {})
 
-            for row_idx in range(2, ws.max_row + 1):
+            for row_idx in range(hdr_row + 1, ws.max_row + 1):
                 cell = ws.cell(row=row_idx, column=col_idx)
                 if cell.value is None:
                     continue
